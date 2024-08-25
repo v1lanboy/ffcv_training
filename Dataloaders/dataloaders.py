@@ -3,7 +3,7 @@ import torch
 import torchvision.transforms as transforms
 
 from ffcv.loader import Loader, OrderOption
-from ffcv.transforms import ToTensor, ToDevice, ToTorchImage, Cutout
+from ffcv.transforms import ToTensor, ToDevice, ToTorchImage, RandomHorizontalFlip, Squeeze
 from ffcv.fields.decoders import IntDecoder, RandomResizedCropRGBImageDecoder, CenterCropRGBImageDecoder
 
 from .utils import fast_collate, PrefetchedWrapper
@@ -45,18 +45,22 @@ def get_dataloader(dataset, data_root, split, batch_size, workers=5, _worker_ini
 
 def get_ffcv_dataloader(data_root:Path,
                         split:str,
-                        device:torch.device,
                         batch_size:int, 
                         workers:int=5,
                         input_size:int=224
                         ):
 
-    label_pipeline = [IntDecoder(), ToTensor(), ToDevice(device)]
+    label_pipeline = [
+        IntDecoder(),
+        ToTensor(),
+        Squeeze(),
+        #ToDevice(device, non_blocking=True) # Not usable with PrefetchedWrapper
+        ]
 
     if split == "train":
         image_pipeline = [
             RandomResizedCropRGBImageDecoder((input_size, input_size)),
-            transforms.RandomHorizontalFlip(),
+            RandomHorizontalFlip(),
             ]
 
     elif split == "val":
@@ -69,7 +73,7 @@ def get_ffcv_dataloader(data_root:Path,
     image_pipeline.extend([
         ToTensor(),
         ToTorchImage(),
-        ToDevice(device, non_blocking=True)
+        #ToDevice(device, non_blocking=True) # Not usable with PrefetchedWrapper (this actually is but removed for consistency)
     ])
     
 

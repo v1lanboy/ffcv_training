@@ -33,7 +33,7 @@ class PrefetchedWrapper(object):
                 next_input = next_input.sub_(mean).div_(std)
 
             if not first:
-                yield input, target
+                yield input, target #This causes runtime error in backprob if device is allocated in FFCV
             else:
                 first = False
 
@@ -48,10 +48,5 @@ class PrefetchedWrapper(object):
         self.epoch = 0
 
     def __iter__(self):
-        if (self.dataloader.sampler is not None and
-            isinstance(self.dataloader.sampler,
-                       torch.utils.data.distributed.DistributedSampler)):
-
-            self.dataloader.sampler.set_epoch(self.epoch)
         self.epoch += 1
         return PrefetchedWrapper.prefetched_loader(self.dataloader)

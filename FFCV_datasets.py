@@ -9,8 +9,6 @@ from ffcv.writer import DatasetWriter, MIN_PAGE_SIZE
 
 from Dataloaders import datasets
 
-PAGE_SIZE = 16*4*MIN_PAGE_SIZE #Malloc Error with default page size this is 16xdefault.
-
 log = logging.getLogger(__name__)
 
 def parse_args() -> argparse.Namespace:
@@ -77,10 +75,13 @@ def create_ffcv_dataset(args: argparse.Namespace):
         }
     for (name, ds) in dataset_dicts.items():
         writer = DatasetWriter(Path(args.ffcv_directory) / f'{name}.beton', {
-            'image': RGBImageField(),
+            'image': RGBImageField(write_mode="smart",
+                                    max_resolution=500,
+                                    jpeg_quality=90,
+                                    compress_probability=0.5),
             'label': IntField()
-        }, page_size=PAGE_SIZE, num_workers=args.workers)
-        writer.from_indexed_dataset(ds)
+        }, num_workers=args.workers)
+        writer.from_indexed_dataset(ds, chunksize=100)
         log.info(f"Dataset written to {args.ffcv_directory}")
 
 if __name__ == "__main__":
